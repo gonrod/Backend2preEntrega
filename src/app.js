@@ -5,10 +5,12 @@ const { create } = require('express-handlebars');
 const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
-const productsRouter = require('./src/routes/productsRouter');
-const cartsRouter = require('./src/routes/cartsRouter');
-const connectDB = require('./src/database');
-const Product = require('./src/models/Product');
+const userRouter = require('./routes/user.router'); // Cambiado para CommonJS
+const sessionRouter = require('./routes/session.router'); // Cambiado para CommonJS
+const productsRouter = require('./routes/productsRouter');
+const cartsRouter = require('./routes/cartsRouter');
+const connectDB = require('./database');
+const Product = require('./models/Product');
 
 const app = express();
 const PORT = 8080;
@@ -25,8 +27,8 @@ const hbs = create({
     extname: '.handlebars',
     defaultLayout: 'main',
     helpers: {
-        eq: (a, b) => a === b, // Definición del helper 'eq'
-    }
+        eq: (a, b) => a === b,
+    },
 });
 
 app.engine('handlebars', hbs.engine);
@@ -37,14 +39,14 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Rutas de la API
 app.use('/api/products', productsRouter);
 app.use('/api/carts', cartsRouter);
-//crear rutas nuevas
-
-
+app.use('/api/users', userRouter); // Aseguramos incluir userRouter
+app.use('/session', sessionRouter);
+app.use('/', userRouter);
 
 // Ruta para renderizar la vista de productos en tiempo real
 app.get('/realtimeproducts', (req, res) => {
@@ -56,15 +58,11 @@ app.get('/realtimeproducts', (req, res) => {
 app.get('/products', async (req, res) => {
     try {
         const { limit = 10, page = 1, sort, query } = req.query;
-
-        // Configuración de filtros y ordenamiento
         const filter = query ? { category: query } : {};
         const sortOption = sort === 'asc' ? { price: 1 } : sort === 'desc' ? { price: -1 } : {};
-
         const limitNum = parseInt(limit, 10);
         const pageNum = parseInt(page, 10);
 
-        // Consulta a la base de datos
         const products = await Product.find(filter)
             .sort(sortOption)
             .skip((pageNum - 1) * limitNum)
@@ -73,9 +71,8 @@ app.get('/products', async (req, res) => {
         const totalProducts = await Product.countDocuments(filter);
         const totalPages = Math.ceil(totalProducts / limitNum);
 
-        // Enviar datos a la vista
         res.render('index', {
-            products: products.map(product => product.toObject()), // Asegura que los productos sean objetos puros
+            products: products.map(product => product.toObject()),
             totalPages,
             prevPage: pageNum > 1 ? pageNum - 1 : null,
             nextPage: pageNum < totalPages ? pageNum + 1 : null,
@@ -84,7 +81,7 @@ app.get('/products', async (req, res) => {
             sort,
             query,
             hasPrevPage: pageNum > 1,
-            hasNextPage: pageNum < totalPages
+            hasNextPage: pageNum < totalPages,
         });
     } catch (error) {
         console.error('Error al obtener productos:', error);
@@ -92,10 +89,9 @@ app.get('/products', async (req, res) => {
     }
 });
 
-// Configuración de Socket.IO para manejo de productos en tiempo real
+// Configuración de Socket.IO
 io.on('connection', async (socket) => {
     console.log('Cliente conectado');
-
     try {
         const products = await Product.find();
         socket.emit('productList', products);

@@ -1,20 +1,21 @@
-import { Router } from 'express';
+const { Router } = require('express');
 
 const router = Router();
 
-//Endpoint para el register
+// Endpoint para el registro
 router.get('/register', (req, res) => {
     res.render('register');
-})
+});
 
-//Endpoint para el login
+// Endpoint para el login
 router.get('/login', (req, res) => {
     res.render('login');
-})
+});
 
-//Ruta para el usuario actual
+// Ruta para el usuario actual
 router.get('/current', (req, res) => {
-    
-})
+    // Implementación pendiente
+    res.status(200).send({ message: 'Ruta /current implementada' });
+});
 
-export default router;
+module.exports = router;
