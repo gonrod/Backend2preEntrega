@@ -34,7 +34,8 @@ router.post('/register', async (req, res) => {
 });
 
 // Inicio de sesión
-router.post('/login', async (req, res) => {
+router.post('api/login', async (req, res) => {
+    console.debug("yes, yes");
     const { email, password } = req.body;
     try {
         const user = await UserModel.findOne({ email });

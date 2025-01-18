@@ -31,9 +31,12 @@ const hbs = create({
     },
 });
 
+
 app.engine('handlebars', hbs.engine);
 app.set('view engine', 'handlebars');
 app.set('views', path.join(__dirname, 'views'));
+
+hbs.handlebars.registerPartial('header', path.join(__dirname, 'views/partials/header.handlebars'));
 
 // Middlewares
 app.use(cors());
@@ -44,8 +47,11 @@ app.use(express.static(path.join(__dirname, '../public')));
 // Rutas de la API
 app.use('/api/products', productsRouter);
 app.use('/api/carts', cartsRouter);
-app.use('/api/users', userRouter); // Aseguramos incluir userRouter
-app.use('/session', sessionRouter);
+//app.use('/api/users', userRouter); // Aseguramos incluir userRouter
+//app.use('/session', sessionRouter);
+app.use('/api/login', sessionRouter);
+
+
 app.use('/', userRouter);
 
 // Ruta para renderizar la vista de productos en tiempo real
